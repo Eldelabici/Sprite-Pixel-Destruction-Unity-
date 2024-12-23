@@ -22,7 +22,7 @@ public class SDD_Object_Eraser : MonoBehaviour
          * Recordatorio de determinar si se posee una textura legible
          *  o preferiblemente una comprobación de script de los distintos destroyables
          * */
-        destructor_position = gameObject.transform.position;
+        //destructor_position = gameObject.transform.position;
         //recordatorio de hacer comprobaciones por tag o por script aqui
         objetive_Object = collision.gameObject;
         
@@ -32,11 +32,8 @@ public class SDD_Object_Eraser : MonoBehaviour
     }
     private void OnTriggerStay2D(Collider2D collision)
     {
-        destructor_position = gameObject.transform.position;
-        if (objetive_Texture != null && collision.gameObject == objetive_Object)
-        {
-            Position_Based_Erasing(destructor_position);
-        }
+        //destructor_position = gameObject.transform.position;
+        Position_Based_Erasing(gameObject.transform.position);
     }
     private void Position_Based_Erasing(Vector2 erase_Position)
     {
