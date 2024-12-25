@@ -9,7 +9,7 @@ public class SDD_Object_Eraser : MonoBehaviour
     public Texture2D objetive_Texture;
     public SpriteRenderer objetive_SpriteRenderer;
     public Vector2 objetive_position, destructor_position;
-    public Vector2 localErasePosition; 
+    public Vector2 localErasePosition;
 
     /*
     *      Asuminedo que tenemos un collider trigger
@@ -25,7 +25,7 @@ public class SDD_Object_Eraser : MonoBehaviour
         //destructor_position = gameObject.transform.position;
         //recordatorio de hacer comprobaciones por tag o por script aqui
         objetive_Object = collision.gameObject;
-        
+
         objetive_SpriteRenderer = objetive_Object.GetComponent<SpriteRenderer>();
         objetive_Texture = objetive_SpriteRenderer.sprite.texture;
 
@@ -46,15 +46,27 @@ public class SDD_Object_Eraser : MonoBehaviour
         localErasePosition.x = (pivotAdjustedPos.x / objetive_SpriteRenderer.sprite.bounds.size.x) * spriteRect.width;
         localErasePosition.y = (pivotAdjustedPos.y / objetive_SpriteRenderer.sprite.bounds.size.y) * spriteRect.height;
 
-        int erase_position_x = Mathf.RoundToInt(localErasePosition.x);
-        int erase_position_y = Mathf.RoundToInt(localErasePosition.y);
+        Vector2Int roundedPosition = World_to_local_position_Rounding(localErasePosition);
 
         // Verifica que las coordenadas estén dentro de los límites de la textura
-        if (erase_position_x >= 0 && erase_position_x < objetive_Texture.width &&
-            erase_position_y >= 0 && erase_position_y < objetive_Texture.height)
+        if (roundedPosition.x >= 0 && roundedPosition.x < objetive_Texture.width &&
+            roundedPosition.y >= 0 && roundedPosition.y < objetive_Texture.height)
         {
-            objetive_Texture.SetPixel(erase_position_x, erase_position_y, new Color(0, 0, 0, 0));
+            objetive_Texture.SetPixel(roundedPosition.x, roundedPosition.y, new Color(0, 0, 0, 0));
             objetive_Texture.Apply();
         }
+    }
+    /*
+     * Funcion para devolver un vector de enteros
+     * y poder usarlos en Position_Based_Erasing
+     * 
+     * En este metodo debemos poder rellenar pixeles vacios
+     * para evitar los problemas con la tasa de actualización 
+     * del borrado de pixeles y de poscisiones
+     */
+    private Vector2Int World_to_local_position_Rounding(Vector2 world_position)
+    {
+        // Redondea las posiciones a enteros usando Vector2Int
+        return new Vector2Int(Mathf.RoundToInt(world_position.x), Mathf.RoundToInt(world_position.y));
     }
 }
