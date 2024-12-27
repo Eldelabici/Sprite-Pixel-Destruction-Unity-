@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -11,10 +13,17 @@ public class SDD_Object_Eraser : MonoBehaviour
     public Vector2 objetive_position, destructor_position;
     public Vector2 localErasePosition;
 
+    //Margenes de coordenadas para los redondeos
+    public float y_margin, x_margin;
+
     /*
     *      Asuminedo que tenemos un collider trigger
     */
-
+    private void Start()
+    {
+        y_margin = 0.5f;
+        x_margin = 0.5f;
+    }
     private void OnTriggerEnter2D(Collider2D collision)
     {
 
@@ -46,13 +55,13 @@ public class SDD_Object_Eraser : MonoBehaviour
         localErasePosition.x = (pivotAdjustedPos.x / objetive_SpriteRenderer.sprite.bounds.size.x) * spriteRect.width;
         localErasePosition.y = (pivotAdjustedPos.y / objetive_SpriteRenderer.sprite.bounds.size.y) * spriteRect.height;
 
-        Vector2Int roundedPosition = World_to_local_position_Rounding(localErasePosition);
+        Vector2Int roundedPosition_local_position = World_to_local_position_Rounding(localErasePosition);
 
         // Verifica que las coordenadas estén dentro de los límites de la textura
-        if (roundedPosition.x >= 0 && roundedPosition.x < objetive_Texture.width &&
-            roundedPosition.y >= 0 && roundedPosition.y < objetive_Texture.height)
+        if (roundedPosition_local_position.x >= 0 && roundedPosition_local_position.x < objetive_Texture.width &&
+            roundedPosition_local_position.y >= 0 && roundedPosition_local_position.y < objetive_Texture.height)
         {
-            objetive_Texture.SetPixel(roundedPosition.x, roundedPosition.y, new Color(0, 0, 0, 0));
+            objetive_Texture.SetPixel(roundedPosition_local_position.x, roundedPosition_local_position.y, new Color(0, 0, 0, 0));
             objetive_Texture.Apply();
         }
     }
@@ -64,6 +73,25 @@ public class SDD_Object_Eraser : MonoBehaviour
      * para evitar los problemas con la tasa de actualización 
      * del borrado de pixeles y de poscisiones
      */
+
+    private void PixelCorrector_decimalmargin(Vector2 world_position)
+    {
+        float decimal_x, decimal_y;
+
+        decimal_x = world_position.x - math.trunc(world_position.x);
+        decimal_y = world_position.y - math.trunc(world_position.y);
+
+        int new_corrected_x, new_corrected_y;
+
+        if(x_margin >= decimal_x)
+        {
+            new_corrected_x = Mathf.RoundToInt(world_position.x);
+        }
+        if(y_margin >= decimal_y)
+        {
+            new_corrected_y = Mathf.RoundToInt(world_position.y);
+        }
+    }
     private Vector2Int World_to_local_position_Rounding(Vector2 world_position)
     {
         // Redondea las posiciones a enteros usando Vector2Int
