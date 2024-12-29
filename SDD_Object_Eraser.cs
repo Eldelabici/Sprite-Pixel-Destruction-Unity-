@@ -13,7 +13,7 @@ public class SDD_Object_Eraser : MonoBehaviour
     public Vector2 objetive_position, destructor_position;
     public Vector2 localErasePosition;
 
-    public List<Vector2Int> corrected_World_Positions;
+    public List<Vector2> corrected_World_Positions;
 
     //Margenes de coordenadas para los redondeos
     public float y_margin, x_margin;
@@ -43,13 +43,7 @@ public class SDD_Object_Eraser : MonoBehaviour
     }
     private void OnTriggerStay2D(Collider2D collision)
     {
-        corrected_World_Positions = PixelCorrector_decimalmargin(gameObject.transform.position);
-        //destructor_position = gameObject.transform.position;
         Position_Based_Erasing(gameObject.transform.position);
-        foreach(Vector2Int position in corrected_World_Positions)
-        {
-            Position_Based_Erasing(position);
-        }
     }
     private void Position_Based_Erasing(Vector2 erase_Position)
     {
@@ -64,50 +58,49 @@ public class SDD_Object_Eraser : MonoBehaviour
 
         Vector2Int roundedPosition_local_position = World_to_local_position_Rounding(localErasePosition);
 
-        // Verifica que las coordenadas estén dentro de los límites de la textura
-        if (roundedPosition_local_position.x >= 0 && roundedPosition_local_position.x < objetive_Texture.width &&
-            roundedPosition_local_position.y >= 0 && roundedPosition_local_position.y < objetive_Texture.height)
-        {
-            objetive_Texture.SetPixel(roundedPosition_local_position.x, roundedPosition_local_position.y, new Color(0, 0, 0, 0));
-            objetive_Texture.Apply();
-        }
-    }
-    /*
-     * Funcion para devolver un vector de enteros
-     * y poder usarlos en Position_Based_Erasing
-     * 
-     * En este metodo debemos poder rellenar pixeles vacios
-     * para evitar los problemas con la tasa de actualización 
-     * del borrado de pixeles y de poscisiones
-     */
+        // Corrige márgenes y obtiene posiciones adicionales
+        List<Vector2> correctedPositions = PixelCorrector_decimalmargin(localErasePosition);
+        correctedPositions.Add(localErasePosition);
 
-    private List<Vector2Int> PixelCorrector_decimalmargin(Vector2 world_position)
+        foreach (Vector2 pos in correctedPositions)
+        {
+            Vector2Int correctedPos = World_to_local_position_Rounding(pos);
+            if (correctedPos.x >= 0 && correctedPos.x < objetive_Texture.width &&
+                correctedPos.y >= 0 && correctedPos.y < objetive_Texture.height)
+            {
+                objetive_Texture.SetPixel(correctedPos.x, correctedPos.y, new Color(0, 0, 0, 0));
+            }
+        }
+        objetive_Texture.Apply();
+    }
+
+    private List<Vector2> PixelCorrector_decimalmargin(Vector2 local_position)
     {
-        Vector2Int rounded_world_position = World_to_local_position_Rounding(world_position);
-        List<Vector2Int> corrected_positions = new List<Vector2Int>();
+        List<Vector2> corrected_positions = new List<Vector2>();
 
         float decimal_x, decimal_y;
 
-        decimal_x = world_position.x - math.trunc(world_position.x);
-        decimal_y = world_position.y - math.trunc(world_position.y);
+        decimal_x = local_position.x - math.trunc(local_position.x);
+        decimal_y = local_position.y - math.trunc(local_position.y);
 
         int new_corrected_x, new_corrected_y;
 
-        if(x_margin >= decimal_x)
+        if (x_margin > decimal_x)
         {
-            new_corrected_x = Mathf.RoundToInt(world_position.x);
+            new_corrected_x = Mathf.RoundToInt(local_position.x) - 1;
 
-            corrected_positions.Add(new Vector2Int(new_corrected_x, rounded_world_position.y));
+            corrected_positions.Add(new Vector2(new_corrected_x, local_position.y));
         }
-        if(y_margin >= decimal_y)
+        if (y_margin > decimal_y)
         {
-            new_corrected_y = Mathf.RoundToInt(world_position.y);
+            new_corrected_y = Mathf.RoundToInt(local_position.y) - 1;
 
-            corrected_positions.Add(new Vector2Int(rounded_world_position.y,new_corrected_y));
+            corrected_positions.Add(new Vector2(local_position.x, new_corrected_y));
         }
 
         return corrected_positions;
     }
+
     private Vector2Int World_to_local_position_Rounding(Vector2 world_position)
     {
         // Redondea las posiciones a enteros usando Vector2Int
