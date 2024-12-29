@@ -13,6 +13,8 @@ public class SDD_Object_Eraser : MonoBehaviour
     public Vector2 objetive_position, destructor_position;
     public Vector2 localErasePosition;
 
+    public List<Vector2Int> corrected_World_Positions;
+
     //Margenes de coordenadas para los redondeos
     public float y_margin, x_margin;
 
@@ -29,7 +31,7 @@ public class SDD_Object_Eraser : MonoBehaviour
 
         /*
          * Recordatorio de determinar si se posee una textura legible
-         *  o preferiblemente una comprobación de script de los distintos destroyables
+         *  o preferiblemente una comprobaciÃ³n de script de los distintos destroyables
          * */
         //destructor_position = gameObject.transform.position;
         //recordatorio de hacer comprobaciones por tag o por script aqui
@@ -41,12 +43,17 @@ public class SDD_Object_Eraser : MonoBehaviour
     }
     private void OnTriggerStay2D(Collider2D collision)
     {
+        corrected_World_Positions = PixelCorrector_decimalmargin(gameObject.transform.position);
         //destructor_position = gameObject.transform.position;
         Position_Based_Erasing(gameObject.transform.position);
+        foreach(Vector2Int position in corrected_World_Positions)
+        {
+            Position_Based_Erasing(position);
+        }
     }
     private void Position_Based_Erasing(Vector2 erase_Position)
     {
-        // Convierte la posición mundial a local
+        // Convierte la posiciÃ³n mundial a local
         Vector2 localPosition = objetive_Object.transform.InverseTransformPoint(erase_Position);
         Rect spriteRect = objetive_SpriteRenderer.sprite.rect;
         Vector2 pivotAdjustedPos = localPosition + (Vector2)objetive_SpriteRenderer.sprite.bounds.extents;
@@ -57,7 +64,7 @@ public class SDD_Object_Eraser : MonoBehaviour
 
         Vector2Int roundedPosition_local_position = World_to_local_position_Rounding(localErasePosition);
 
-        // Verifica que las coordenadas estén dentro de los límites de la textura
+        // Verifica que las coordenadas estÃ©n dentro de los lÃ­mites de la textura
         if (roundedPosition_local_position.x >= 0 && roundedPosition_local_position.x < objetive_Texture.width &&
             roundedPosition_local_position.y >= 0 && roundedPosition_local_position.y < objetive_Texture.height)
         {
@@ -70,12 +77,15 @@ public class SDD_Object_Eraser : MonoBehaviour
      * y poder usarlos en Position_Based_Erasing
      * 
      * En este metodo debemos poder rellenar pixeles vacios
-     * para evitar los problemas con la tasa de actualización 
+     * para evitar los problemas con la tasa de actualizaciÃ³n 
      * del borrado de pixeles y de poscisiones
      */
 
-    private void PixelCorrector_decimalmargin(Vector2 world_position)
+    private List<Vector2Int> PixelCorrector_decimalmargin(Vector2 world_position)
     {
+        Vector2Int rounded_world_position = World_to_local_position_Rounding(world_position);
+        List<Vector2Int> corrected_positions = new List<Vector2Int>();
+
         float decimal_x, decimal_y;
 
         decimal_x = world_position.x - math.trunc(world_position.x);
@@ -86,11 +96,17 @@ public class SDD_Object_Eraser : MonoBehaviour
         if(x_margin >= decimal_x)
         {
             new_corrected_x = Mathf.RoundToInt(world_position.x);
+
+            corrected_positions.Add(new Vector2Int(new_corrected_x, rounded_world_position.y));
         }
         if(y_margin >= decimal_y)
         {
             new_corrected_y = Mathf.RoundToInt(world_position.y);
+
+            corrected_positions.Add(new Vector2Int(rounded_world_position.y,new_corrected_y));
         }
+
+        return corrected_positions;
     }
     private Vector2Int World_to_local_position_Rounding(Vector2 world_position)
     {
