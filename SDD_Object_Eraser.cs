@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -15,6 +16,8 @@ public class SDD_Object_Eraser : MonoBehaviour
 
     public List<Vector2> corrected_World_Positions;
 
+    public bool margin_corrector;
+
     //Margenes de coordenadas para los redondeos
     public float y_margin, x_margin;
 
@@ -25,10 +28,11 @@ public class SDD_Object_Eraser : MonoBehaviour
     {
         y_margin = 0.5f;
         x_margin = 0.5f;
+
+        margin_corrector = false;
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
-
         /*
          * Recordatorio de determinar si se posee una textura legible
          *  o preferiblemente una comprobación de script de los distintos destroyables
@@ -51,17 +55,20 @@ public class SDD_Object_Eraser : MonoBehaviour
         Vector2 localPosition = objetive_Object.transform.InverseTransformPoint(erase_Position);
         Rect spriteRect = objetive_SpriteRenderer.sprite.rect;
         Vector2 pivotAdjustedPos = localPosition + (Vector2)objetive_SpriteRenderer.sprite.bounds.extents;
-
         // Calcula coordenadas en la textura
         localErasePosition.x = (pivotAdjustedPos.x / objetive_SpriteRenderer.sprite.bounds.size.x) * spriteRect.width;
         localErasePosition.y = (pivotAdjustedPos.y / objetive_SpriteRenderer.sprite.bounds.size.y) * spriteRect.height;
-
         Vector2Int roundedPosition_local_position = World_to_local_position_Rounding(localErasePosition);
-
         // Corrige márgenes y obtiene posiciones adicionales
-        List<Vector2> correctedPositions = PixelCorrector_decimalmargin(localErasePosition);
+        List<Vector2> correctedPositions = new List<Vector2>();
+            
         correctedPositions.Add(localErasePosition);
 
+        if (margin_corrector)
+        {
+            correctedPositions.AddRange(PixelCorrector_decimalmargin(localErasePosition));
+                
+        }
         foreach (Vector2 pos in correctedPositions)
         {
             Vector2Int correctedPos = World_to_local_position_Rounding(pos);
@@ -72,6 +79,7 @@ public class SDD_Object_Eraser : MonoBehaviour
             }
         }
         objetive_Texture.Apply();
+        correctedPositions.Clear();
     }
 
     private List<Vector2> PixelCorrector_decimalmargin(Vector2 local_position)
@@ -88,13 +96,11 @@ public class SDD_Object_Eraser : MonoBehaviour
         if (x_margin > decimal_x)
         {
             new_corrected_x = Mathf.RoundToInt(local_position.x) - 1;
-
             corrected_positions.Add(new Vector2(new_corrected_x, local_position.y));
         }
         if (y_margin > decimal_y)
         {
             new_corrected_y = Mathf.RoundToInt(local_position.y) - 1;
-
             corrected_positions.Add(new Vector2(local_position.x, new_corrected_y));
         }
 
@@ -104,6 +110,8 @@ public class SDD_Object_Eraser : MonoBehaviour
     private Vector2Int World_to_local_position_Rounding(Vector2 world_position)
     {
         // Redondea las posiciones a enteros usando Vector2Int
-        return new Vector2Int(Mathf.RoundToInt(world_position.x), Mathf.RoundToInt(world_position.y));
+        return new Vector2Int(
+            Mathf.RoundToInt(world_position.x),
+            Mathf.RoundToInt(world_position.y));
     }
 }
