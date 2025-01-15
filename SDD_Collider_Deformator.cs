@@ -1,54 +1,61 @@
 using UnityEngine;
+using System.Collections.Generic;
 
-[RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(PolygonCollider2D))]
-public class SDD_Collider_Deformator : MonoBehaviour
+public class SDD_Collider_VertexLister : MonoBehaviour
 {
-    private SpriteRenderer spriteRenderer;
+    public List<Vector2> verticesList = new List<Vector2>(); // Lista para mostrar los vértices actuales (solo lectura)
+    public List<Vector2> objetivesvectors = new List<Vector2>(); // Lista editable desde el inspector
     private PolygonCollider2D polygonCollider;
 
-    // Start is called before the first frame update
+    private List<Vector2> previousObjetivesVectors = new List<Vector2>(); // Copia para detectar cambios
+
     void Start()
     {
-        spriteRenderer = GetComponent<SpriteRenderer>();
         polygonCollider = GetComponent<PolygonCollider2D>();
 
-        if (spriteRenderer != null && polygonCollider != null)
+        // Inicializar listas con los valores actuales del PolygonCollider2D
+        ListVerticesFromCollider();
+        objetivesvectors = new List<Vector2>(verticesList);
+        previousObjetivesVectors = new List<Vector2>(objetivesvectors);
+    }
+
+    void Update()
+    {
+        // Verificar si la lista objetivesvectors ha cambiado
+        if (!AreListsEqual(objetivesvectors, previousObjetivesVectors))
         {
-            AddCornersToCollider();
-        }
-        else
-        {
-            Debug.LogError("SpriteRenderer or PolygonCollider2D is missing on this GameObject.");
+            verticesList = new List<Vector2>(objetivesvectors);
+            polygonCollider.SetPath(0, verticesList.ToArray());
+            previousObjetivesVectors = new List<Vector2>(objetivesvectors);
+
+            Debug.Log("Se han actualizado los vértices del PolygonCollider2D.");
         }
     }
 
-    /// <summary>
-    /// Adds corner points to the PolygonCollider2D based on the SpriteRenderer's bounds.
-    /// </summary>
-    private void AddCornersToCollider()
+    private void ListVerticesFromCollider()
     {
-        Bounds bounds = spriteRenderer.bounds;
-
-        // Calculate corners in world space
-        Vector2 topLeft = new Vector2(bounds.min.x, bounds.max.y);
-        Vector2 topRight = new Vector2(bounds.max.x, bounds.max.y);
-        Vector2 bottomRight = new Vector2(bounds.max.x, bounds.min.y);
-        Vector2 bottomLeft = new Vector2(bounds.min.x, bounds.min.y);
-
-        // Convert world space to local space (since PolygonCollider2D uses local coordinates)
-        Vector2[] corners = new Vector2[]
+        verticesList.Clear();
+        for (int i = 0; i < polygonCollider.pathCount; i++)
         {
-            transform.InverseTransformPoint(topLeft),
-            transform.InverseTransformPoint(topRight),
-            transform.InverseTransformPoint(bottomRight),
-            transform.InverseTransformPoint(bottomLeft)
-        };
+            Vector2[] pathVertices = polygonCollider.GetPath(i);
+            verticesList.AddRange(pathVertices);
+        }
+    }
 
-        // Apply the corners to the PolygonCollider2D
-        polygonCollider.pathCount = 1; // Single path for a closed shape
-        polygonCollider.SetPath(0, corners);
+    private bool AreListsEqual(List<Vector2> listA, List<Vector2> listB)
+    {
+        // Verificar si ambas listas tienen el mismo tamaño
+        if (listA.Count != listB.Count)
+            return false;
 
-        Debug.Log("Corners added to PolygonCollider2D.");
+        // Comparar cada elemento
+        for (int i = 0; i < listA.Count; i++)
+        {
+            if (listA[i] != listB[i])
+                return false;
+        }
+
+        return true;
     }
 }
